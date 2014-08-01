@@ -1,7 +1,7 @@
 #include<iostream>
 #include<OpenCL/opencl.h>
 
-#define CHK_ERROR(err, str) ((err) ? printf("%s returned error \n", str) : printf("%s returned success\n", str));
+#define CHK_ERROR(err, str) ((err) ? printf("%s returned error %d\n", str, err) : printf("%s returned success\n", str));
 
 
 //Without this statement resv1 & resv2 are paaded with 2 bytes to be algined on a 4-byte boundary. 
@@ -32,7 +32,8 @@ typedef struct {
   unsigned int num_colors; //number of colors in the image
   unsigned int num_imp_colors; //number of important colors
 } struct_bmp_info_header;
-  
+
+//should do better than making it global  
 struct_bmp_header bmp_header;
 struct_bmp_info_header bmp_info_header; 
 
@@ -55,16 +56,18 @@ int writeBmp(const char* filename, const int* data, int w, int h)
        
        int pixel = data[j+i*w];
  
-       printf("%d\t",pixel);
-       char r = pixel & 0xff;
-       char g = (pixel >> 8) & 0xff;
-       char b = (pixel >> 16) & 0xff;
+//       printf("%d\t",pixel);
+       int r = pixel & 0xff;
+       int g = (pixel >> 8) & 0xff;
+       int b = (pixel >> 16) & 0xff;
        fputc(r, fp);
        fputc(g, fp);
-       fputc(r, fp);
+       fputc(b, fp);
     }
  } 
- fclose(fp); 
+ fclose(fp);
+ printf("Wrote Output File\n");
+ return 0; 
 }
 
 int* readBmp(const char* filename, int* w, int* h)
@@ -112,12 +115,12 @@ int* readBmp(const char* filename, int* w, int* h)
 
  for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++){
-       char r = fgetc(fp);
-       char g = fgetc(fp);
-       char b = fgetc(fp);
+       int r = fgetc(fp);
+       int g = fgetc(fp);
+       int b = fgetc(fp);
        int pixel = r | (g << 8) | (b << 16);
        data[j+i*width] = pixel;
-       printf("%d\t",pixel);
+       //printf("%d\t",pixel);
     }
  } 
  fclose(fp);
@@ -131,24 +134,22 @@ int* readBmp(const char* filename, int* w, int* h)
 
 int main(int argc, char** argv)
 {
-   cl_mem src;
-   cl_mem dst;
+   cl_mem cl_src;
+   cl_mem cl_dst;
    cl_platform_id platform_id;
    cl_device_id device_id;
    cl_context context;
    cl_context_properties *properties = NULL;
    cl_command_queue queue;
-   
+ 
+   cl_program program;
+   cl_kernel kernel;
+     
    int w;
    int h;
    
-//   int size = w*h*sizeof(int);
-
-  // int* src_ptr = (int*)malloc(size);
-   //int* dst_ptr = (int*)malloc(size);
-
-
    char deviceinfostr[2048];
+   char program_source[2048];
 
    int err = CL_SUCCESS;
   
@@ -174,27 +175,104 @@ int main(int argc, char** argv)
    queue = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
    CHK_ERROR(err, "clCreateCommandQueue");
 
-   //Query Capabilities
+   //Query Capabilities - TBD
 
-   //Create memory objects
-   //src = clCreateBuffer(context, CL_MEM_USE_HOST_PTR, size, src_ptr, &err);
-   //CHK_ERROR(err, "clCreateBuffer source buffer");
-   //dst = clCreateBuffer(context, CL_MEM_USE_HOST_PTR, size, dst_ptr, &err);
-   //CHK_ERROR(err, "clCreateBuffer destination buffer");
+   int* src = readBmp("sample.bmp", &w, &h);
+   int size = w*h*sizeof(int);
 
-   int* data = readBmp("sample.bmp", &w, &h);
-   writeBmp("out.bmp", data, w, h);
 
-   int* dump = readBmp("out.bmp", &w, &h); 
+   int* dst = (int*)malloc(size);
+   cl_src = clCreateBuffer(context, CL_MEM_USE_HOST_PTR, size, src, &err);
+   CHK_ERROR(err, "clCreateBuffer source buffer");
+   cl_dst = clCreateBuffer(context, CL_MEM_USE_HOST_PTR, size, dst, &err);
+   CHK_ERROR(err, "clCreateBuffer destination buffer");
 
-   //Create Program, Kernel
+   FILE* fp;
+   size_t file_size;
+   char* src_string;
 
-   //Build Program
+   fp = fopen ( "opencl_sample.cl" , "r" );
+   if(fp == NULL){
+     printf("File open error\n"); 
+     return 1;
+   }
 
-   //Set kernel arguments
+  // get the file size:
+  fseek (fp , 0 , SEEK_END);
+  file_size = ftell (fp);
+  rewind (fp);
 
-   //Enqueue Kernel
+  //allocate memory to store the cl file
+  src_string = (char*) malloc(sizeof(char) * file_size);
 
-   //Get profiling information
+  //copy contents of cl file into string
+  fread(src_string,1,file_size,fp);
 
+  //Create program from source
+  program = clCreateProgramWithSource(
+		context, 
+		1, 
+		(const char**)&src_string, 
+		&file_size, 
+		&err);
+  CHK_ERROR(err, "clCreateProgramWithSource");
+
+  //Build the program - TBD check for build errors
+  err = clBuildProgram(
+            	program,
+            	1,
+            	&device_id,
+            	NULL,
+	    	NULL,
+		NULL);
+
+  CHK_ERROR(err, "clBuildProgram");
+
+  //Create kernel object
+  kernel = clCreateKernel(
+		program,
+		"image_filter",
+		&err);
+  CHK_ERROR(err, "clCreateKernel");
+
+  //set kernel arguments
+  err = clSetKernelArg(
+		kernel,
+		0,
+		sizeof(cl_mem),
+		&cl_src);
+  err |= clSetKernelArg(
+		kernel,
+		1,
+		sizeof(cl_mem),
+		&cl_dst);
+  err |= clSetKernelArg(
+		kernel,
+		2,
+		sizeof(int),
+		&w);
+
+  const size_t global_work_size[2] = {w, h};
+
+  //Enqueue the kernel for execution
+  err = clEnqueueNDRangeKernel(
+		queue, 
+		kernel, 
+		2, 
+		NULL,
+                global_work_size, 
+		NULL,
+        	0, 
+		NULL, 
+		NULL);
+  CHK_ERROR(err, "clEnqueueNDRangeKernel");
+  
+  //Force finish to ensure kernel completes execution on device
+  err = clFinish(queue);
+  CHK_ERROR(err, "clFinish");
+
+  //Assuming host pointer is shared, no need for read buffer - may not always work!!! FIXME
+
+  //Write output to bmp file
+  writeBmp("out.bmp", dst, w, h);
 }
