@@ -14,8 +14,8 @@ __kernel void image_filter(__global uchar4* src,
    uchar4 in  = src[position];
 
    //Convert to greyscale
-   //uchar4 out = in.x * 0.299f + in.y * 0.587f + in.z * 0.114f;
+   uchar out = in.x * 0.299f + in.y * 0.587f + in.z * 0.114f;
 
    //Write out result to same location in destination image
-    dst[position] = in;//out;
+    dst[position] = (uchar4)(out, out, out, 0);
 }
