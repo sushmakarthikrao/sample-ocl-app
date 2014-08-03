@@ -55,6 +55,8 @@ int main(int argc, char** argv)
 		sizeof(int),
 		&w);
 
+  CHK_ERROR(err, "clSetKernelArg");
+  
   const size_t global_work_size[2] = {w, h};
 
   //Enqueue the kernel for execution
