@@ -1,0 +1,4 @@
+This sample code in OpenCL performs a simple per pixel filter operation on the image. 
+Written to serve as a simple example for OCL beginners, so most setup functions are moved into a cl_util.cpp.
+
+For me, it is code that I can reuse in other OCL applications!
