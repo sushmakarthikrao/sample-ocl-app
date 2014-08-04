@@ -4,7 +4,7 @@
 #include<iostream>
 #include<OpenCL/opencl.h>
 
-#define CHK_ERROR(err, str) ((err) ? printf("%s returned error %d\n", str, err) : printf("%s returned success\n", str));
+#define CHK_ERROR(err, str) if(err) { printf("%s returned error %d\n", str, err); }
 
 
 //Without this statement resv1 & resv2 are paaded with 2 bytes to be algined on a 4-byte boundary. 
@@ -40,5 +40,5 @@ int* readBmp(const char* /*filename*/, int* /*width*/, int* /*height*/);
 int writeBmp(const char* /*filename*/, const int* /*image data*/, int /*width*/, int /*height*/);
 cl_device_id getDeviceId();
 cl_kernel getKernel(cl_context /*context*/, cl_device_id /*device_id*/);
-
+void queryTimingInfo(cl_event);
 #endif /*CL_UTIL_H*/

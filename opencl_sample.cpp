@@ -10,6 +10,7 @@ int main(int argc, char** argv)
   cl_mem cl_dst;
   cl_command_queue queue;
   cl_context_properties *properties = NULL;    
+  cl_event event;
 
   int w;
   int h;
@@ -69,12 +70,14 @@ int main(int argc, char** argv)
 		NULL,
         	0, 
 		NULL, 
-		NULL);
+		&event);
   CHK_ERROR(err, "clEnqueueNDRangeKernel");
   
   //Force finish to ensure kernel completes execution on device
   err = clFinish(queue);
   CHK_ERROR(err, "clFinish");
+
+  queryTimingInfo(event);
 
   //Assuming host pointer is shared, no need for read buffer - may not always work!!! FIXME
 

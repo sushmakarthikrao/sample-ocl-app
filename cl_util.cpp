@@ -14,8 +14,6 @@ int writeBmp(const char* filename, const int* data, int w, int h)
     return -1;
   }
 
-  printf("width %d height %d\n", w, h);
-
   fwrite(&bmp_header, sizeof(struct_bmp_header), 1, fp);
   fwrite(&bmp_info_header, sizeof(struct_bmp_info_header), 1, fp);
 
@@ -24,7 +22,6 @@ int writeBmp(const char* filename, const int* data, int w, int h)
 
        int pixel = data[j+i*w];
 
-//       printf("%d\t",pixel);
        int r = pixel & 0xff;
        int g = (pixel >> 8) & 0xff;
        int b = (pixel >> 16) & 0xff;
@@ -35,7 +32,7 @@ int writeBmp(const char* filename, const int* data, int w, int h)
  }
  fclose(fp);
 
-printf("Wrote Output File\n");
+ printf("Wrote Output File out.bmp\n");
  return 0;
 }
 
@@ -48,13 +45,10 @@ int* readBmp(const char* filename, int* w, int* h)
    return NULL;
  }
 
- //printf("size of bmp_header %u\n",sizeof(struct_bmp_header));
- //printf("size of bmp_info_header %u\n",sizeof(struct_bmp_info_header));
-
  fread(&bmp_header, sizeof(struct_bmp_header), 1, fp);
- //fseek ( fp , sizeof(bmp_header) , SEEK_SET );
  fread(&bmp_info_header, sizeof(struct_bmp_info_header), 1 , fp);
 
+ #ifdef DEBUG
  printf("Debug Info\n");
  printf("signature %x\n", bmp_header.signature);
  printf("size %d\n", bmp_header.size);
@@ -70,6 +64,7 @@ int* readBmp(const char* filename, int* w, int* h)
  printf("vertical resolution %d\n", bmp_info_header.vres);
  printf("number of colors %d\n", bmp_info_header.num_colors);
  printf("number of important colors %d\n", bmp_info_header.num_imp_colors);
+ #endif
 
  fseek(fp, bmp_header.offset, SEEK_SET);
 
@@ -89,9 +84,6 @@ int* readBmp(const char* filename, int* w, int* h)
        int b = fgetc(fp);
        int pixel = r | (g << 8) | (b << 16);
        data[j+i*width] = pixel;
-       //printf("%d\t",pixel);
-      data[j+i*width] = pixel;
-       //printf("%d\t",pixel);
     }
  }
  fclose(fp);
@@ -178,4 +170,32 @@ cl_kernel getKernel(cl_context context, cl_device_id device_id)
   CHK_ERROR(err, "clCreateKernel");
   
   return kernel;
+}
+
+void queryTimingInfo(cl_event event)
+{
+
+  cl_ulong time_start, time_end;
+  double total_time;
+  int err;
+ 
+  err = clGetEventProfilingInfo(
+		event,
+		CL_PROFILING_COMMAND_START,
+ 		sizeof(cl_ulong),
+        	&time_start,
+ 		NULL);
+
+  err |= clGetEventProfilingInfo(
+		event,
+		CL_PROFILING_COMMAND_END,
+ 		sizeof(cl_ulong),
+        	&time_end,
+ 		NULL);
+  CHK_ERROR(err, "clGetEventProfilingInfo");
+
+  total_time = time_end - time_start;
+
+  printf("Kernel Execution Time on Device: %f milliseconds\n", total_time/1e6f); 
+
 }
