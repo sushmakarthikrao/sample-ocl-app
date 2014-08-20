@@ -94,25 +94,44 @@ int* readBmp(const char* filename, int* w, int* h)
 cl_device_id getDeviceId()
 {
    int err = 0;
-   cl_platform_id platform_id;
-   cl_device_id device_id;
+   cl_device_id* device_id;
+   cl_uint num = 0;
+   int dev_num = 0;
+   char** deviceinfostr;
 
-   char deviceinfostr[2048];
-
-   //Get Platform IDs
-   err = clGetPlatformIDs(1, &platform_id, NULL);
-   CHK_ERROR(err, "clGetPlatformIDs");
-
-   //Get Device IDs
-   err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+   //Get Number of Device IDs
+   err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, 0, NULL, &num);
    CHK_ERROR(err, "clGetDeviceIds");
 
-   //Get Device Information
-   err = clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(deviceinfostr), &deviceinfostr, NULL);
-   CHK_ERROR(err, "clGetDeviceInfo");
+   device_id = new cl_device_id[num];
+   deviceinfostr = new char*[num];
 
-   printf("CL Device: %s\n", deviceinfostr);
-   return device_id;
+   //Get Device IDs
+   err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, num, device_id, NULL);
+   CHK_ERROR(err, "clGetDeviceIds");
+
+   printf("Available OpenCL Devices\n");
+
+   for(int i = 0; i < num; i++)
+   {
+      deviceinfostr[i] = new char[MAX_DEVICE_NAME_LENGTH];
+      //Get Device Information
+      err = clGetDeviceInfo(device_id[i], CL_DEVICE_NAME, MAX_DEVICE_NAME_LENGTH, deviceinfostr[i], NULL);
+      CHK_ERROR(err, "clGetDeviceInfo");
+      printf("CL Device %d: %s\n", i+1, deviceinfostr[i]);
+   }
+
+   printf("Enter CL device number to select a device");
+   printf("(Valid selections from 1 to %d):", num);
+   scanf("%d", &dev_num);
+
+   if(dev_num < 1 || dev_num > num)
+   {
+      printf("Invalid Device\n");
+      exit(1);
+   }
+
+   return [dev_num-1];
 }
 
 cl_kernel getKernel(cl_context context, cl_device_id device_id)

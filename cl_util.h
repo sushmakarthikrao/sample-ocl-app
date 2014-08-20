@@ -5,7 +5,7 @@
 #include<OpenCL/opencl.h>
 
 #define CHK_ERROR(err, str) if(err) { printf("%s returned error %d\n", str, err); }
-
+#define MAX_DEVICE_NAME_LENGTH 2048
 
 //Without this statement resv1 & resv2 are paaded with 2 bytes to be algined on a 4-byte boundary. 
 //This won't work. They have to be 2 bytes each without padding. 

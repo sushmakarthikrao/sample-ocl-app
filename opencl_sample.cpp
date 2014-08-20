@@ -64,7 +64,7 @@ int main(int argc, char** argv)
   err = clEnqueueNDRangeKernel(
 		queue, 
 		kernel, 
-		2, 
+		2,
 		NULL,
                 global_work_size, 
 		NULL,
@@ -72,15 +72,23 @@ int main(int argc, char** argv)
 		NULL, 
 		&event);
   CHK_ERROR(err, "clEnqueueNDRangeKernel");
-  
-  //Force finish to ensure kernel completes execution on device
-  err = clFinish(queue);
-  CHK_ERROR(err, "clFinish");
+
+  //Map the destination buffer back to a pointer usable on the host side
+  //Its a blocking map (CL_TRUE for 3rd parameter) in order to force all enqueues in this queue to execute on the device 
+  void* host_data = clEnqueueMapBuffer(queue,
+				cl_dst,
+				CL_TRUE,
+				CL_MAP_READ,
+				0,
+				size,
+				0,
+				NULL,
+				NULL,
+				&err);
+  CHK_ERROR(err, "clEnqueueMapBuffer");
 
   queryTimingInfo(event);
 
-  //Assuming host pointer is shared, no need for read buffer - may not always work!!! FIXME
-
   //Write output to bmp file
-  writeBmp("out.bmp", dst, w, h);
+  writeBmp("out.bmp", (int*)host_data, w, h);
 }
