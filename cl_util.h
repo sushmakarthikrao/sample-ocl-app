@@ -2,7 +2,12 @@
 #define CL_UTIL_H
 
 #include<iostream>
+
+#ifdef __APPLE__
 #include<OpenCL/opencl.h>
+#else
+#include<CL/cl.h>
+#endif
 
 #define CHK_ERROR(err, str) if(err) { printf("%s returned error %d\n", str, err); }
 #define MAX_DEVICE_NAME_LENGTH 2048
