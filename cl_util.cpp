@@ -131,7 +131,7 @@ cl_device_id getDeviceId()
       exit(1);
    }
 
-   return [dev_num-1];
+   return device_id[dev_num-1];
 }
 
 cl_kernel getKernel(cl_context context, cl_device_id device_id)
