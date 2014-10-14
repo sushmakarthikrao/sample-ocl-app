@@ -17,7 +17,14 @@ int main(int argc, char** argv)
    
   int err = CL_SUCCESS;
 
-  device_id = getDeviceId();
+  
+  cl_uint num_platforms;
+  cl_platform_id clPlatformID;
+
+  err = clGetPlatformIDs (1, &clPlatformID, NULL);
+  CHK_ERROR(err, "clGetPlatformIDs");
+
+  device_id = getDeviceId(&clPlatformID);
 
   //Create Context
   context = clCreateContext(properties, 1, &device_id, NULL, NULL, &err);

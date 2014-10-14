@@ -91,7 +91,7 @@ int* readBmp(const char* filename, int* w, int* h)
  return data;
 }
 
-cl_device_id getDeviceId()
+cl_device_id getDeviceId(cl_platform_id* platform)
 {
    int err = 0;
    cl_device_id* device_id;
@@ -100,14 +100,14 @@ cl_device_id getDeviceId()
    char** deviceinfostr;
 
    //Get Number of Device IDs
-   err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, 0, NULL, &num);
+   err = clGetDeviceIDs(*platform, CL_DEVICE_TYPE_ALL, 0, NULL, &num);
    CHK_ERROR(err, "clGetDeviceIds");
 
    device_id = new cl_device_id[num];
    deviceinfostr = new char*[num];
 
    //Get Device IDs
-   err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, num, device_id, NULL);
+   err = clGetDeviceIDs(*platform, CL_DEVICE_TYPE_ALL, num, device_id, NULL);
    CHK_ERROR(err, "clGetDeviceIds");
 
    printf("Available OpenCL Devices\n");

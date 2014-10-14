@@ -43,7 +43,7 @@ typedef struct {
 
 int* readBmp(const char* /*filename*/, int* /*width*/, int* /*height*/);
 int writeBmp(const char* /*filename*/, const int* /*image data*/, int /*width*/, int /*height*/);
-cl_device_id getDeviceId();
+cl_device_id getDeviceId(cl_platform_id*);
 cl_kernel getKernel(cl_context /*context*/, cl_device_id /*device_id*/);
 void queryTimingInfo(cl_event);
 #endif /*CL_UTIL_H*/
